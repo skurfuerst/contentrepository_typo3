@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Sandstorm\ContentrepositoryTypo3Registry\Registry;
+namespace Sandstorm\ContentrepositoryTypo3\Registry;
 
 use Neos\ContentRepository\Core\ContentRepository;
 use Neos\ContentRepository\Core\Dimension\ContentDimensionSourceInterface;
@@ -27,30 +27,30 @@ use Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryI
 use Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryIds;
 use Neos\ContentRepository\Core\Subscription\Store\SubscriptionStoreInterface;
 use Neos\ContentRepository\Core\Subscription\SubscriptionId;
-use Neos\ContentRepositoryRegistry\Exception\ContentRepositoryNotFoundException;
-use Neos\ContentRepositoryRegistry\Exception\InvalidConfigurationException;
-use Neos\ContentRepositoryRegistry\Factory\Clock\ClockFactoryInterface;
-use Neos\ContentRepositoryRegistry\Factory\ContentDimensionSource\ContentDimensionSourceFactoryInterface;
-use Neos\ContentRepositoryRegistry\Factory\EventStore\EventStoreFactoryInterface;
-use Neos\ContentRepositoryRegistry\Factory\NodeTypeManager\NodeTypeManagerFactoryInterface;
-use Neos\ContentRepositoryRegistry\Factory\SubscriptionStore\SubscriptionStoreFactoryInterface;
-use Neos\ContentRepositoryRegistry\SubgraphCachingInMemory\SubgraphCachePool;
+use Sandstorm\ContentrepositoryTypo3\Registry\Exception\ContentRepositoryNotFoundException;
+use Sandstorm\ContentrepositoryTypo3\Registry\Factory\Clock\ClockFactoryInterface;
+use Sandstorm\ContentrepositoryTypo3\Registry\Factory\ContentDimensionSource\ContentDimensionSourceFactoryInterface;
+use Sandstorm\ContentrepositoryTypo3\Registry\Factory\EventStore\EventStoreFactoryInterface;
+use Sandstorm\ContentrepositoryTypo3\Registry\Factory\NodeTypeManager\NodeTypeManagerFactoryInterface;
+use Sandstorm\ContentrepositoryTypo3\Registry\Factory\SubscriptionStore\SubscriptionStoreFactoryInterface;
+use Sandstorm\ContentrepositoryTypo3\Registry\SubgraphCachingInMemory\SubgraphCachePool;
 use Neos\EventStore\EventStoreInterface;
-use Neos\Flow\Annotations as Flow;
-use Neos\Flow\ObjectManagement\ObjectManagerInterface;
 use Neos\Utility\Arrays;
 use Neos\Utility\PositionalArraySorter;
 use Psr\Clock\ClockInterface;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use Sandstorm\ContentrepositoryTypo3\Registry\Exception\InvalidConfigurationException;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 use Symfony\Component\Serializer\Serializer;
+use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
+use TYPO3\CMS\Core\SingletonInterface;
 
 /**
  * @api
  */
-#[Flow\Scope('singleton')]
-final class ContentRepositoryRegistry
+final class ContentRepositoryRegistry implements SingletonInterface
 {
     /**
      * @var array<string, ContentRepositoryFactory>
@@ -62,34 +62,45 @@ final class ContentRepositoryRegistry
      */
     private array $settings;
 
-    #[Flow\Inject(name: 'Neos.ContentRepositoryRegistry:Logger', lazy: false)]
-    protected LoggerInterface $logger;
+    public function __construct(
+        private readonly LoggerInterface $logger,
+        private readonly ContainerInterface $container,
+        private readonly SubgraphCachePool $subgraphCachePool,
+        private readonly ExtensionConfiguration $extensionConfiguration
+    ) {
+        $this->initializeSettings();
+    }
 
-    #[Flow\Inject()]
-    protected ObjectManagerInterface $objectManager;
-
-    #[Flow\Inject()]
-    protected SubgraphCachePool $subgraphCachePool;
-
-    /**
-     * @internal for flow wiring and test cases only
-     * @param array<string, mixed> $settings
-     */
-    public function injectSettings(array $settings): void
+    private function initializeSettings(): void
     {
-        $this->settings = $settings;
+        // In TYPO3 v13, configuration is typically loaded from extension configuration
+        // or site configuration. This is a simplified example.
+        $this->settings = $this->extensionConfiguration->get('content_repository_registry') ?? [];
+
+        // Fallback to default configuration if not set
+        if (empty($this->settings)) {
+            $this->settings = $this->getDefaultSettings();
+        }
     }
 
     /**
-     * This is the main entry point for Neos / Flow installations to fetch a content repository.
+     * @return array<string, mixed>
+     */
+    private function getDefaultSettings(): array
+    {
+        return [
+            'contentRepositories' => [],
+            'presets' => []
+        ];
+    }
+
+    /**
+     * This is the main entry point for TYPO3 installations to fetch a content repository.
      * A content repository is not a singleton and must be fetched by its identifier.
      *
      * To get a hold of a content repository identifier, it has to be passed along.
      *
-     * For Neos web requests, the current content repository can be inferred by the domain and the connected site:
-     * {@see \Neos\Neos\FrontendRouting\SiteDetection\SiteDetectionResult::fromRequest()}
-     * Or it has to be encoded manually as part of a query parameter.
-     *
+     * For TYPO3 web requests, the current content repository can be inferred by the site configuration.
      * For CLI applications, it's a necessity to specify the content repository as argument from the outside,
      * generally via `--content-repository default`
      *
@@ -213,7 +224,7 @@ final class ContentRepositoryRegistry
     private function buildEventStore(ContentRepositoryId $contentRepositoryId, array $contentRepositorySettings, ClockInterface $clock): EventStoreInterface
     {
         isset($contentRepositorySettings['eventStore']['factoryObjectName']) || throw InvalidConfigurationException::fromMessage('Content repository "%s" does not have eventStore.factoryObjectName configured.', $contentRepositoryId->value);
-        $eventStoreFactory = $this->objectManager->get($contentRepositorySettings['eventStore']['factoryObjectName']);
+        $eventStoreFactory = $this->container->get($contentRepositorySettings['eventStore']['factoryObjectName']);
         if (!$eventStoreFactory instanceof EventStoreFactoryInterface) {
             throw InvalidConfigurationException::fromMessage('eventStore.factoryObjectName for content repository "%s" is not an instance of %s but %s.', $contentRepositoryId->value, EventStoreFactoryInterface::class, get_debug_type($eventStoreFactory));
         }
@@ -224,7 +235,7 @@ final class ContentRepositoryRegistry
     private function buildNodeTypeManager(ContentRepositoryId $contentRepositoryId, array $contentRepositorySettings): NodeTypeManager
     {
         isset($contentRepositorySettings['nodeTypeManager']['factoryObjectName']) || throw InvalidConfigurationException::fromMessage('Content repository "%s" does not have nodeTypeManager.factoryObjectName configured.', $contentRepositoryId->value);
-        $nodeTypeManagerFactory = $this->objectManager->get($contentRepositorySettings['nodeTypeManager']['factoryObjectName']);
+        $nodeTypeManagerFactory = $this->container->get($contentRepositorySettings['nodeTypeManager']['factoryObjectName']);
         if (!$nodeTypeManagerFactory instanceof NodeTypeManagerFactoryInterface) {
             throw InvalidConfigurationException::fromMessage('nodeTypeManager.factoryObjectName for content repository "%s" is not an instance of %s but %s.', $contentRepositoryId->value, NodeTypeManagerFactoryInterface::class, get_debug_type($nodeTypeManagerFactory));
         }
@@ -235,7 +246,7 @@ final class ContentRepositoryRegistry
     private function buildContentDimensionSource(ContentRepositoryId $contentRepositoryId, array $contentRepositorySettings): ContentDimensionSourceInterface
     {
         isset($contentRepositorySettings['contentDimensionSource']['factoryObjectName']) || throw InvalidConfigurationException::fromMessage('Content repository "%s" does not have contentDimensionSource.factoryObjectName configured.', $contentRepositoryId->value);
-        $contentDimensionSourceFactory = $this->objectManager->get($contentRepositorySettings['contentDimensionSource']['factoryObjectName']);
+        $contentDimensionSourceFactory = $this->container->get($contentRepositorySettings['contentDimensionSource']['factoryObjectName']);
         if (!$contentDimensionSourceFactory instanceof ContentDimensionSourceFactoryInterface) {
             throw InvalidConfigurationException::fromMessage('contentDimensionSource.factoryObjectName for content repository "%s" is not an instance of %s but %s.', $contentRepositoryId->value, NodeTypeManagerFactoryInterface::class, get_debug_type($contentDimensionSourceFactory));
         }
@@ -272,7 +283,7 @@ final class ContentRepositoryRegistry
             throw InvalidConfigurationException::fromMessage('Content repository "%s" does not have the contentGraphProjection.factoryObjectName configured.', $contentRepositoryId->value);
         }
 
-        $contentGraphProjectionFactory = $this->objectManager->get($contentRepositorySettings['contentGraphProjection']['factoryObjectName']);
+        $contentGraphProjectionFactory = $this->container->get($contentRepositorySettings['contentGraphProjection']['factoryObjectName']);
         if (!$contentGraphProjectionFactory instanceof ContentGraphProjectionFactoryInterface) {
             throw InvalidConfigurationException::fromMessage('Projection factory object name of contentGraphProjection (content repository "%s") is not an instance of %s but %s.', $contentRepositoryId->value, ContentGraphProjectionFactoryInterface::class, get_debug_type($contentGraphProjectionFactory));
         }
@@ -294,7 +305,7 @@ final class ContentRepositoryRegistry
                 // Allow catch up hooks to be disabled by setting their configuration to `null`
                 continue;
             }
-            $catchUpHookFactory = $this->objectManager->get($catchUpHookOptions['factoryObjectName']);
+            $catchUpHookFactory = $this->container->get($catchUpHookOptions['factoryObjectName']);
             if (!$catchUpHookFactory instanceof CatchUpHookFactoryInterface) {
                 throw InvalidConfigurationException::fromMessage('CatchUpHook factory object name for hook "%s" in projection "%s" (content repository "%s") is not an instance of %s but %s', $catchUpHookName, $projectionName, $contentRepositoryId->value, CatchUpHookFactoryInterface::class, get_debug_type($catchUpHookFactory));
             }
@@ -319,7 +330,7 @@ final class ContentRepositoryRegistry
             if ($commandHookSettings === null) {
                 continue;
             }
-            $commandHookFactory = $this->objectManager->get($commandHookSettings['factoryObjectName']);
+            $commandHookFactory = $this->container->get($commandHookSettings['factoryObjectName']);
             if (!$commandHookFactory instanceof CommandHookFactoryInterface) {
                 throw InvalidConfigurationException::fromMessage('Factory object name for command hook "%s" (content repository "%s") is not an instance of %s but %s.', $name, $contentRepositoryId->value, CommandHookFactoryInterface::class, get_debug_type($commandHookFactory));
             }
@@ -344,7 +355,7 @@ final class ContentRepositoryRegistry
             if (!is_array($projectionOptions)) {
                 throw InvalidConfigurationException::fromMessage('Projection "%s" (content repository "%s") must be configured as array got %s', $projectionName, $contentRepositoryId->value, get_debug_type($projectionOptions));
             }
-            $projectionFactory = isset($projectionOptions['factoryObjectName']) ? $this->objectManager->get($projectionOptions['factoryObjectName']) : null;
+            $projectionFactory = isset($projectionOptions['factoryObjectName']) ? $this->container->get($projectionOptions['factoryObjectName']) : null;
             if (!$projectionFactory instanceof ProjectionFactoryInterface) {
                 throw InvalidConfigurationException::fromMessage('Projection factory object name for projection "%s" (content repository "%s") is not an instance of %s but %s.', $projectionName, $contentRepositoryId->value, ProjectionFactoryInterface::class, get_debug_type($projectionFactory));
             }
@@ -362,7 +373,7 @@ final class ContentRepositoryRegistry
     private function buildAuthProviderFactory(ContentRepositoryId $contentRepositoryId, array $contentRepositorySettings): AuthProviderFactoryInterface
     {
         isset($contentRepositorySettings['authProvider']['factoryObjectName']) || throw InvalidConfigurationException::fromMessage('Content repository "%s" does not have authProvider.factoryObjectName configured.', $contentRepositoryId->value);
-        $authProviderFactory = $this->objectManager->get($contentRepositorySettings['authProvider']['factoryObjectName']);
+        $authProviderFactory = $this->container->get($contentRepositorySettings['authProvider']['factoryObjectName']);
         if (!$authProviderFactory instanceof AuthProviderFactoryInterface) {
             throw InvalidConfigurationException::fromMessage('authProvider.factoryObjectName for content repository "%s" is not an instance of %s but %s.', $contentRepositoryId->value, AuthProviderFactoryInterface::class, get_debug_type($authProviderFactory));
         }
@@ -373,7 +384,7 @@ final class ContentRepositoryRegistry
     private function buildClock(ContentRepositoryId $contentRepositoryIdentifier, array $contentRepositorySettings): ClockInterface
     {
         isset($contentRepositorySettings['clock']['factoryObjectName']) || throw InvalidConfigurationException::fromMessage('Content repository "%s" does not have clock.factoryObjectName configured.', $contentRepositoryIdentifier->value);
-        $clockFactory = $this->objectManager->get($contentRepositorySettings['clock']['factoryObjectName']);
+        $clockFactory = $this->container->get($contentRepositorySettings['clock']['factoryObjectName']);
         if (!$clockFactory instanceof ClockFactoryInterface) {
             throw InvalidConfigurationException::fromMessage('clock.factoryObjectName for content repository "%s" is not an instance of %s but %s.', $contentRepositoryIdentifier->value, ClockFactoryInterface::class, get_debug_type($clockFactory));
         }
@@ -384,11 +395,10 @@ final class ContentRepositoryRegistry
     private function buildSubscriptionStore(ContentRepositoryId $contentRepositoryId, ClockInterface $clock, array $contentRepositorySettings): SubscriptionStoreInterface
     {
         isset($contentRepositorySettings['subscriptionStore']['factoryObjectName']) || throw InvalidConfigurationException::fromMessage('Content repository "%s" does not have subscriptionStore.factoryObjectName configured.', $contentRepositoryId->value);
-        $subscriptionStoreFactory = $this->objectManager->get($contentRepositorySettings['subscriptionStore']['factoryObjectName']);
+        $subscriptionStoreFactory = $this->container->get($contentRepositorySettings['subscriptionStore']['factoryObjectName']);
         if (!$subscriptionStoreFactory instanceof SubscriptionStoreFactoryInterface) {
             throw InvalidConfigurationException::fromMessage('subscriptionStore.factoryObjectName for content repository "%s" is not an instance of %s but %s.', $contentRepositoryId->value, SubscriptionStoreFactoryInterface::class, get_debug_type($subscriptionStoreFactory));
         }
         return $subscriptionStoreFactory->build($contentRepositoryId, $clock, $contentRepositorySettings['subscriptionStore']['options'] ?? []);
     }
 }
-

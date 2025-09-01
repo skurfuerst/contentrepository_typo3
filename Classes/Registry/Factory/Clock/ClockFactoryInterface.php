@@ -1,0 +1,15 @@
+<?php
+declare(strict_types=1);
+namespace Sandstorm\ContentrepositoryTypo3\Registry\Factory\Clock;
+
+use Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryId;
+use Psr\Clock\ClockInterface;
+
+/**
+ * @api
+ */
+interface ClockFactoryInterface
+{
+    /** @param array<string, mixed> $options */
+    public function build(ContentRepositoryId $contentRepositoryIdentifier, array $options): ClockInterface;
+}
