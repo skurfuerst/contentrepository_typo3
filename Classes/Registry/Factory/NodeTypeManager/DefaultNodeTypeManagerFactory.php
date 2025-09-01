@@ -13,12 +13,31 @@ readonly class DefaultNodeTypeManagerFactory implements NodeTypeManagerFactoryIn
     ) {
     }
 
+    private static function nodeTypeFromTtContentTca(mixed $value)
+    {
+        global $TCA;
+        $nodeTypeDef = [
+            'superTypes' => [
+                'TYPO3:Content' => true
+            ],
+            'properties' => []
+        ];
+        foreach ($TCA['tt_content']['columns'] as $column => $columnDef) {
+            $nodeTypeDef['properties'][$column] = [
+                // TODO: string?? or more type safe??
+                'type' => 'string'
+            ];
+        }
+
+        return $nodeTypeDef;
+    }
+
     /** @param array<string, mixed> $options */
     public function build(ContentRepositoryId $contentRepositoryId, array $options): NodeTypeManager
     {
         return NodeTypeManager::createFromArrayConfigurationLoader(
             function () {
-                return [
+                $nodeTypes = [
                      'TYPO3:Sites' => [
                          'superTypes' => [
                              'Neos.ContentRepository:Root' => true
@@ -46,7 +65,17 @@ readonly class DefaultNodeTypeManagerFactory implements NodeTypeManagerFactoryIn
                             ]
                         ]
                     ],
+                    'TYPO3:Content' => [
+                        'abstract' => true,
+                    ],
                 ];
+
+                global $TCA;
+                foreach ($TCA['tt_content']['columns']['CType']['config']['items'] as $itemDef) {
+                    $nodeTypes['TYPO3:Content.' . $itemDef['value']] = self::nodeTypeFromTtContentTca($itemDef['value']);
+                }
+
+                return $nodeTypes;
             }
         );
     }
