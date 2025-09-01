@@ -166,7 +166,7 @@ readonly class RootNodeCreator
         if ($rootNodeAggregate !== null) {
             return $rootNodeAggregate->nodeAggregateId;
         }
-        $rootNodeAggregateId = NodeAggregateId::create();
+        $rootNodeAggregateId = NodeAggregateId::fromString('000000000');
         $this->contentRepository->handle(CreateRootNodeAggregateWithNode::create(
             WorkspaceName::forLive(),
             $rootNodeAggregateId,
