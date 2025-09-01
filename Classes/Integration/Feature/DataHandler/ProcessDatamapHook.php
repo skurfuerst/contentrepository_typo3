@@ -41,7 +41,7 @@ class ProcessDatamapHook {
     }
 
     public function processDatamap_beforeStart(DataHandler $dataHandler) {
-        var_dump($dataHandler->datamap);
+        //var_dump($dataHandler->datamap);
         if (array_key_exists('pages', $dataHandler->datamap)) {
             // special content logic for us
             $subgraph = $this->getContentSubgraph();
@@ -122,5 +122,7 @@ class ProcessDatamapHook {
             // prevent original logic
             unset($dataHandler->datamap['pages']);
         }
+
+
     }
 }

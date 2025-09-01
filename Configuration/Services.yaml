@@ -32,6 +32,13 @@ services:
   Sandstorm\ContentrepositoryTypo3\Integration\Feature\PageTreeDisplay\PageTreeRepository:
     public: true
 
+  TYPO3\CMS\Backend\Controller\PageLayoutController:
+    alias: Sandstorm\ContentrepositoryTypo3\Integration\Feature\BackendPageLayout\PageLayoutControllerPatched
+    public: true
+  Sandstorm\ContentrepositoryTypo3\Integration\Feature\BackendPageLayout\PageLayoutControllerPatched:
+    public: true
+
+
   Sandstorm\ContentrepositoryTypo3\Integration\Feature\DataHandler\ProcessDatamapHook:
     public: true
 

@@ -5,6 +5,7 @@ namespace Sandstorm\ContentrepositoryTypo3\Integration\Feature\PageTreeDisplay;
 
 use Neos\ContentRepository\Core\ContentRepository;
 use Neos\ContentRepository\Core\DimensionSpace\DimensionSpacePoint;
+use Neos\ContentRepository\Core\NodeType\NodeTypeManager;
 use Neos\ContentRepository\Core\Projection\ContentGraph\ContentSubgraphInterface;
 use Neos\ContentRepository\Core\Projection\ContentGraph\Filter\FindChildNodesFilter;
 use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
@@ -24,7 +25,7 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
  *
  * @internal this class is not public API yet, as it needs to be proven stable enough first.
  */
-class PageTreeRepository extends \TYPO3\CMS\Backend\Tree\Repository\PageTreeRepository
+class PatchedPageTreeRepository extends \TYPO3\CMS\Backend\Tree\Repository\PageTreeRepository
 {
     private ContentRepository $contentRepository;
 
@@ -84,10 +85,20 @@ class PageTreeRepository extends \TYPO3\CMS\Backend\Tree\Repository\PageTreeRepo
 
     private function mapNodeToPageRecordAndLoadChildren(Node $node, NodeAggregateId $parentId, int $currentLevel, \Closure $loadChildrenFn): array
     {
-        $properties = $node->properties;
         $nodeTypeManager = $this->contentRepository->getNodeTypeManager();
+
         $nodeType = $nodeTypeManager->getNodeType($node->nodeTypeName);
 
+        $typo3PageArray = self::buildTypo3PageArrayForNode($node, $parentId, $nodeTypeManager);
+        $typo3PageArray['_children'] = $loadChildrenFn($node, $currentLevel);
+
+        return $typo3PageArray;
+    }
+
+    public static function buildTypo3PageArrayForNode(Node $node, NodeAggregateId $parentId, NodeTypeManager $nodeTypeManager): array
+    {
+        $properties = $node->properties;
+        $nodeType = $nodeTypeManager->getNodeType($node->nodeTypeName);
 
         return [
             // Core TYPO3 fields mapped from Neos
@@ -123,7 +134,6 @@ class PageTreeRepository extends \TYPO3\CMS\Backend\Tree\Repository\PageTreeRepo
             'url' => '',
             'sys_language_uid' => '',
             'l10n_parent' => 0, // Different translation handling in Neos
-            '_children' => $loadChildrenFn($node, $currentLevel)
         ];
     }
 }
