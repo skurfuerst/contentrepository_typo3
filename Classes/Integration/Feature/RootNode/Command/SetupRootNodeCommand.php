@@ -6,6 +6,7 @@ use Neos\ContentRepository\Core\NodeType\NodeTypeName;
 use Neos\ContentRepository\Core\Service\ContentRepositoryMaintainerFactory;
 use Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryId;
 use Neos\ContentRepository\Core\SharedModel\Node\NodeName;
+use Sandstorm\ContentrepositoryTypo3\Integration\Feature\NodeIdHandling\NodeIdGenerator;
 use Sandstorm\ContentrepositoryTypo3\Integration\Feature\RootNode\RootNodeCreator;
 use Sandstorm\ContentrepositoryTypo3\Registry\ContentRepositoryRegistry;
 use Symfony\Component\Console\Command\Command;
@@ -17,7 +18,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 
 class SetupRootNodeCommand extends Command
 {
-    public function __construct(private readonly ContentRepositoryRegistry $contentRepositoryRegistry)
+    public function __construct(private readonly ContentRepositoryRegistry $contentRepositoryRegistry, private readonly NodeIdGenerator $nodeIdGenerator)
     {
         parent::__construct();
     }
@@ -68,7 +69,7 @@ class SetupRootNodeCommand extends Command
         $contentRepositoryId = ContentRepositoryId::fromString($contentRepository);
         $contentRepository = $this->contentRepositoryRegistry->get($contentRepositoryId);
 
-        $rootNodeCreator = new RootNodeCreator($contentRepository);
+        $rootNodeCreator = new RootNodeCreator($contentRepository, $this->nodeIdGenerator);
         $rootNodeCreator->createSiteNodeIfNotExists($siteNodeName, $siteNodeType);
 
         $io->success(sprintf('Site node "%s" was set up', $siteNodeName->value));

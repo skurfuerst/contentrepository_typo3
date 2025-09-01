@@ -1,0 +1,2 @@
+<?php
+$GLOBALS['TYPO3_CONF_VARS']['SYS']['Objects'][\TYPO3\CMS\Backend\Tree\Repository\PageTreeRepository::class]['className'] = \Sandstorm\ContentrepositoryTypo3\Integration\Feature\PageTreeDisplay\PageTreeRepository::class;

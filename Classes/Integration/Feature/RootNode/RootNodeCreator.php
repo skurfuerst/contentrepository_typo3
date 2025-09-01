@@ -33,6 +33,7 @@ use Neos\ContentRepository\Core\SharedModel\Node\NodeName;
 use Neos\ContentRepository\Core\SharedModel\Node\NodeVariantSelectionStrategy;
 use Neos\ContentRepository\Core\SharedModel\Workspace\ContentStreamId;
 use Neos\ContentRepository\Core\SharedModel\Workspace\WorkspaceName;
+use Sandstorm\ContentrepositoryTypo3\Integration\Feature\NodeIdHandling\NodeIdGenerator;
 
 /**
  * @internal in Neos, corresponds to Neos\Neos\Domain\Service\SiteServiceInterals
@@ -45,6 +46,7 @@ readonly class RootNodeCreator
 
     public function __construct(
         private ContentRepository $contentRepository,
+        private readonly NodeIdGenerator $nodeIdGenerator,
     )
     {
         $this->nodeTypeManager = $this->contentRepository->getNodeTypeManager();
@@ -127,7 +129,7 @@ readonly class RootNodeCreator
         $rootDimensionSpacePoints = $this->interDimensionalVariationGraph->getRootGeneralizations();
         $arbitraryRootDimensionSpacePoint = array_shift($rootDimensionSpacePoints);
 
-        $siteNodeAggregateId = NodeAggregateId::create();
+        $siteNodeAggregateId = $this->nodeIdGenerator->newNodeId($this->contentRepository->id);
         $this->contentRepository->handle(CreateNodeAggregateWithNode::create(
             WorkspaceName::forLive(),
             $siteNodeAggregateId,
