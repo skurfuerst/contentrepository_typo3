@@ -7,6 +7,7 @@ services:
   Sandstorm\ContentrepositoryTypo3\:
     resource: '../Classes/*'
 
+  # Factory dependencies
   Sandstorm\ContentrepositoryTypo3\Registry\SubgraphCachingInMemory\FlushSubgraphCachePoolCatchUpHookFactory:
     public: true
   Sandstorm\ContentrepositoryTypo3\Registry\Factory\Clock\SystemClockFactory:
@@ -24,9 +25,17 @@ services:
   Sandstorm\ContentrepositoryTypo3\Registry\Factory\ContentGraphProjectionFactoryAdapter:
     public: true
 
+  # CLI commands
   Sandstorm\ContentrepositoryTypo3\Registry\Command\CrSetupCommand:
     tags:
       - name: 'console.command'
         command: 'cr:setup'
         description: 'Create content repository tables'
+        schedulable: false
+
+  Sandstorm\ContentrepositoryTypo3\Registry\Command\CrStatusCommand:
+    tags:
+      - name: 'console.command'
+        command: 'cr:status'
+        description: 'Content Repository Status'
         schedulable: false
