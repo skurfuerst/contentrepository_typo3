@@ -32,6 +32,8 @@ services:
   Sandstorm\ContentrepositoryTypo3\Integration\Feature\PageTreeDisplay\PageTreeRepository:
     public: true
 
+  Sandstorm\ContentrepositoryTypo3\Integration\Feature\DataHandler\ProcessDatamapHook:
+    public: true
 
   # CLI commands
   Sandstorm\ContentrepositoryTypo3\Registry\Command\CrSetupCommand:

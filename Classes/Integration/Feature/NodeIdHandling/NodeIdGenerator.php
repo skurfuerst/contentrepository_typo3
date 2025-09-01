@@ -17,6 +17,11 @@ class NodeIdGenerator
         $eventTableName = 'cr_' . $contentRepositoryId->value . '_events';
         $connection = $this->connectionPool->getConnectionForTable($eventTableName);
         $maxId = $connection->executeQuery('SELECT count(*) FROM ' . $eventTableName . ' WHERE type="NodeAggregateWithNodeWasCreated"')->fetchOne() ?? 0;
-        return NodeAggregateId::fromString(sprintf('%09d', intval($maxId)+1));
+        return self::fromNumericTypo3Id(intval($maxId)+1);
+    }
+
+    public static function fromNumericTypo3Id(int $numericId): NodeAggregateId
+    {
+        return NodeAggregateId::fromString(sprintf('%09d', $numericId));
     }
 }

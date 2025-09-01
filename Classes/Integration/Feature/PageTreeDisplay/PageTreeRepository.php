@@ -49,11 +49,15 @@ class PageTreeRepository extends \TYPO3\CMS\Backend\Tree\Repository\PageTreeRepo
         $subgraph = $this->getContentSubgraph();
         $rootNode = $subgraph->findRootNodeByType(NodeTypeNameFactory::forSites());
 
-        $children = $subgraph->findChildNodes($rootNode->aggregateId, FindChildNodesFilter::create());
+        $children = $subgraph->findChildNodes($rootNode->aggregateId, FindChildNodesFilter::create()); // TODO: only document nodes
 
-        $pageTree['_children'] = $this->mapNodesToPageRecords($children, $rootNode->aggregateId);
+        $loaderFunction = null;
+        $loaderFunction = function(Node $node, $level) use ($subgraph, &$loaderFunction) {
+            $children = $subgraph->findChildNodes($node->aggregateId, FindChildNodesFilter::create()); // TODO: only document nodes
+            return $this->mapNodesToPageRecordsAndLoadChildren($children, $node->aggregateId, $level + 1, $loaderFunction);
+        };
 
-        // TODO: depth handling
+        $pageTree['_children'] = $this->mapNodesToPageRecordsAndLoadChildren($children, $rootNode->aggregateId, 1, $loaderFunction);
         return $pageTree;
     }
 
@@ -68,17 +72,17 @@ class PageTreeRepository extends \TYPO3\CMS\Backend\Tree\Repository\PageTreeRepo
         );
     }
 
-    private function mapNodesToPageRecords(Nodes $nodes, NodeAggregateId $parentId): array
+    private function mapNodesToPageRecordsAndLoadChildren(Nodes $nodes, NodeAggregateId $parentId, int $currentLevel, \Closure $loadChildrenFn): array
     {
         $result = [];
         foreach ($nodes as $node) {
-            $result[] = $this->mapNodeToPageRecord($node, $parentId);
+            $result[] = $this->mapNodeToPageRecordAndLoadChildren($node, $parentId, $currentLevel, $loadChildrenFn);
         }
 
         return $result;
     }
 
-    private function mapNodeToPageRecord(Node $node, NodeAggregateId $parentId): array
+    private function mapNodeToPageRecordAndLoadChildren(Node $node, NodeAggregateId $parentId, int $currentLevel, \Closure $loadChildrenFn): array
     {
         $properties = $node->properties;
         $nodeTypeManager = $this->contentRepository->getNodeTypeManager();
@@ -119,7 +123,7 @@ class PageTreeRepository extends \TYPO3\CMS\Backend\Tree\Repository\PageTreeRepo
             'url' => '',
             'sys_language_uid' => '',
             'l10n_parent' => 0, // Different translation handling in Neos
-            '_children' => []
+            '_children' => $loadChildrenFn($node, $currentLevel)
         ];
     }
 }
