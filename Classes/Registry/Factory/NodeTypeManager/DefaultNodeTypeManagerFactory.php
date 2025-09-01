@@ -19,7 +19,33 @@ readonly class DefaultNodeTypeManagerFactory implements NodeTypeManagerFactoryIn
         return NodeTypeManager::createFromArrayConfigurationLoader(
             function () {
                 return [
-                     // TODO: NODE TYPES HERE :)
+                     'TYPO3:Sites' => [
+                         'superTypes' => [
+                             'Neos.ContentRepository:Root' => true
+                         ]
+                     ],
+                    'TYPO3:Site' => [
+                        'abstract' => true
+                    ],
+                    'TYPO3:SiteRootPage' => [
+                        'superTypes' => [
+                            'TYPO3:Document' => true,
+                            'TYPO3:Site' => true
+                        ],
+                    ],
+                    'TYPO3:Page' => [
+                        'superTypes' => [
+                            'TYPO3:Document' => true
+                        ]
+                    ],
+                    'TYPO3:Document' => [
+                        'abstract' => true,
+                        'properties' => [
+                            'title' => [
+                                'type' => 'string'
+                            ]
+                        ]
+                    ],
                 ];
             }
         );
