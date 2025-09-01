@@ -1,0 +1,28 @@
+{
+  "name": "sandstorm/contentrepository-typo3",
+  "type": "typo3-cms-extension",
+  "description": "CR TYPO3",
+  "homepage": "https://www.evia.de",
+  "license": ["GPL-2.0-or-later"],
+  "keywords": ["TYPO3 CMS"],
+  "require": {
+    "typo3/cms-core": "^13.4",
+    "neos/contentrepository-core": "^9.0.0",
+    "neos/contentrepository-dbal": "dev-90-dbal-update",
+    "neos/contentrepository-structureadjustment": "^9.0.0",
+    "neos/contentrepository-nodemigration": "^9.0.0",
+    "psr/clock": "^1"
+  },
+  "suggest": {
+  },
+  "autoload": {
+    "psr-4": {
+      "Sandstorm\\ContentrepositoryTypo3\\": "Classes/"
+    }
+  },
+  "extra": {
+    "typo3/cms": {
+      "extension-key": "contentrepository_typo3"
+    }
+  }
+}

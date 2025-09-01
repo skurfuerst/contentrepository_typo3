@@ -1,0 +1,18 @@
+services:
+  _defaults:
+    autowire: true
+    autoconfigure: true
+    public: false
+
+  Sandstorm\ContentrepositoryTypo3\:
+    resource: '../Classes/*'
+
+  #Sandstorm\ContentrepositoryTypo3\PackageResolver:
+  #  public: true
+
+  Sandstorm\ContentrepositoryTypo3\Registry\Command\CrSetupCommand:
+    tags:
+      - name: 'console.command'
+        command: 'cr:setup'
+        description: 'Create content repository tables'
+        schedulable: false
