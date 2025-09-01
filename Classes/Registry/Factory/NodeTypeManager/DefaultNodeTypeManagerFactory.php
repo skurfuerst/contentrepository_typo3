@@ -10,8 +10,6 @@ use Neos\Flow\Configuration\ConfigurationManager;
 readonly class DefaultNodeTypeManagerFactory implements NodeTypeManagerFactoryInterface
 {
     public function __construct(
-        private ConfigurationManager $configurationManager,
-        private NodeTypeEnrichmentService $nodeTypeEnrichmentService,
     ) {
     }
 
@@ -20,8 +18,9 @@ readonly class DefaultNodeTypeManagerFactory implements NodeTypeManagerFactoryIn
     {
         return NodeTypeManager::createFromArrayConfigurationLoader(
             function () {
-                $configuration = $this->configurationManager->getConfiguration('NodeTypes');
-                return $this->nodeTypeEnrichmentService->enrichNodeTypeLabelsConfiguration($configuration);
+                return [
+                     // TODO: NODE TYPES HERE :)
+                ];
             }
         );
     }

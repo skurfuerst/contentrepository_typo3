@@ -7,8 +7,22 @@ services:
   Sandstorm\ContentrepositoryTypo3\:
     resource: '../Classes/*'
 
-  #Sandstorm\ContentrepositoryTypo3\PackageResolver:
-  #  public: true
+  Sandstorm\ContentrepositoryTypo3\Registry\SubgraphCachingInMemory\FlushSubgraphCachePoolCatchUpHookFactory:
+    public: true
+  Sandstorm\ContentrepositoryTypo3\Registry\Factory\Clock\SystemClockFactory:
+    public: true
+  Sandstorm\ContentrepositoryTypo3\Registry\Factory\EventStore\DoctrineEventStoreFactory:
+    public: true
+  Sandstorm\ContentrepositoryTypo3\Registry\Factory\NodeTypeManager\DefaultNodeTypeManagerFactory:
+    public: true
+  Sandstorm\ContentrepositoryTypo3\Registry\Factory\ContentDimensionSource\ConfigurationBasedContentDimensionSourceFactory:
+    public: true
+  Sandstorm\ContentrepositoryTypo3\Registry\Factory\AuthProvider\StaticAuthProviderFactory:
+    public: true
+  Sandstorm\ContentrepositoryTypo3\Registry\Factory\SubscriptionStore\SubscriptionStoreFactory:
+    public: true
+  Sandstorm\ContentrepositoryTypo3\Registry\Factory\ContentGraphProjectionFactoryAdapter:
+    public: true
 
   Sandstorm\ContentrepositoryTypo3\Registry\Command\CrSetupCommand:
     tags:

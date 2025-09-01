@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sandstorm\ContentrepositoryTypo3\Registry;
 
+use Neos\ContentGraph\DoctrineDbalAdapter\DoctrineDbalContentGraphProjectionFactory;
 use Neos\ContentRepository\Core\ContentRepository;
 use Neos\ContentRepository\Core\Dimension\ContentDimensionSourceInterface;
 use Neos\ContentRepository\Core\Factory\AuthProviderFactoryInterface;
@@ -14,6 +15,15 @@ use Neos\ContentRepository\Core\Factory\ContentRepositoryServiceFactoryInterface
 use Neos\ContentRepository\Core\Factory\ContentRepositoryServiceInterface;
 use Neos\ContentRepository\Core\Factory\ContentRepositorySubscriberFactories;
 use Neos\ContentRepository\Core\Factory\ProjectionSubscriberFactory;
+use Neos\ContentRepository\Core\Infrastructure\Property\Normalizer\ArrayNormalizer;
+use Neos\ContentRepository\Core\Infrastructure\Property\Normalizer\CollectionTypeDenormalizer;
+use Neos\ContentRepository\Core\Infrastructure\Property\Normalizer\ScalarNormalizer;
+use Neos\ContentRepository\Core\Infrastructure\Property\Normalizer\UriNormalizer;
+use Neos\ContentRepository\Core\Infrastructure\Property\Normalizer\ValueObjectArrayDenormalizer;
+use Neos\ContentRepository\Core\Infrastructure\Property\Normalizer\ValueObjectBoolDenormalizer;
+use Neos\ContentRepository\Core\Infrastructure\Property\Normalizer\ValueObjectFloatDenormalizer;
+use Neos\ContentRepository\Core\Infrastructure\Property\Normalizer\ValueObjectIntDenormalizer;
+use Neos\ContentRepository\Core\Infrastructure\Property\Normalizer\ValueObjectStringDenormalizer;
 use Neos\ContentRepository\Core\NodeType\NodeTypeManager;
 use Neos\ContentRepository\Core\Projection\CatchUpHook\CatchUpHookFactories;
 use Neos\ContentRepository\Core\Projection\CatchUpHook\CatchUpHookFactoryInterface;
@@ -28,11 +38,19 @@ use Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryI
 use Neos\ContentRepository\Core\Subscription\Store\SubscriptionStoreInterface;
 use Neos\ContentRepository\Core\Subscription\SubscriptionId;
 use Sandstorm\ContentrepositoryTypo3\Registry\Exception\ContentRepositoryNotFoundException;
+use Sandstorm\ContentrepositoryTypo3\Registry\Factory\AuthProvider\StaticAuthProviderFactory;
 use Sandstorm\ContentrepositoryTypo3\Registry\Factory\Clock\ClockFactoryInterface;
+use Sandstorm\ContentrepositoryTypo3\Registry\Factory\Clock\SystemClockFactory;
+use Sandstorm\ContentrepositoryTypo3\Registry\Factory\ContentDimensionSource\ConfigurationBasedContentDimensionSourceFactory;
 use Sandstorm\ContentrepositoryTypo3\Registry\Factory\ContentDimensionSource\ContentDimensionSourceFactoryInterface;
+use Sandstorm\ContentrepositoryTypo3\Registry\Factory\ContentGraphProjectionFactoryAdapter;
+use Sandstorm\ContentrepositoryTypo3\Registry\Factory\EventStore\DoctrineEventStoreFactory;
 use Sandstorm\ContentrepositoryTypo3\Registry\Factory\EventStore\EventStoreFactoryInterface;
+use Sandstorm\ContentrepositoryTypo3\Registry\Factory\NodeTypeManager\DefaultNodeTypeManagerFactory;
 use Sandstorm\ContentrepositoryTypo3\Registry\Factory\NodeTypeManager\NodeTypeManagerFactoryInterface;
+use Sandstorm\ContentrepositoryTypo3\Registry\Factory\SubscriptionStore\SubscriptionStoreFactory;
 use Sandstorm\ContentrepositoryTypo3\Registry\Factory\SubscriptionStore\SubscriptionStoreFactoryInterface;
+use Sandstorm\ContentrepositoryTypo3\Registry\SubgraphCachingInMemory\FlushSubgraphCachePoolCatchUpHookFactory;
 use Sandstorm\ContentrepositoryTypo3\Registry\SubgraphCachingInMemory\SubgraphCachePool;
 use Neos\EventStore\EventStoreInterface;
 use Neos\Utility\Arrays;
@@ -41,6 +59,8 @@ use Psr\Clock\ClockInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Sandstorm\ContentrepositoryTypo3\Registry\Exception\InvalidConfigurationException;
+use Symfony\Component\Serializer\Normalizer\BackedEnumNormalizer;
+use Symfony\Component\Serializer\Normalizer\DateTimeNormalizer;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 use Symfony\Component\Serializer\Serializer;
@@ -63,11 +83,12 @@ final class ContentRepositoryRegistry implements SingletonInterface
     private array $settings;
 
     public function __construct(
-        private readonly LoggerInterface $logger,
-        private readonly ContainerInterface $container,
-        private readonly SubgraphCachePool $subgraphCachePool,
+        private readonly LoggerInterface        $logger,
+        private readonly ContainerInterface     $container,
+        private readonly SubgraphCachePool      $subgraphCachePool,
         private readonly ExtensionConfiguration $extensionConfiguration
-    ) {
+    )
+    {
         $this->initializeSettings();
     }
 
@@ -75,7 +96,7 @@ final class ContentRepositoryRegistry implements SingletonInterface
     {
         // In TYPO3 v13, configuration is typically loaded from extension configuration
         // or site configuration. This is a simplified example.
-        $this->settings = $this->extensionConfiguration->get('content_repository_registry') ?? [];
+        $this->settings = []; // TODO: FIX ME LATER  $this->extensionConfiguration->get('content_repository_registry') ?? [];
 
         // Fallback to default configuration if not set
         if (empty($this->settings)) {
@@ -89,8 +110,112 @@ final class ContentRepositoryRegistry implements SingletonInterface
     private function getDefaultSettings(): array
     {
         return [
-            'contentRepositories' => [],
-            'presets' => []
+            'contentRepositories' => [
+                'default' => [
+                    'preset' => 'default',
+                ]
+            ],
+            'presets' => [
+                'default' => [
+
+                    'eventStore' => [
+                        'factoryObjectName' => DoctrineEventStoreFactory::class
+                    ],
+
+                    'nodeTypeManager' => [
+                        'factoryObjectName' => DefaultNodeTypeManagerFactory::class
+                    ],
+
+                    'contentDimensionSource' => [
+                        'factoryObjectName' => ConfigurationBasedContentDimensionSourceFactory::class
+                    ],
+
+                    'authProvider' => [
+                        'factoryObjectName' => StaticAuthProviderFactory::class
+                    ],
+
+                    'clock' => [
+                        'factoryObjectName' => SystemClockFactory::class
+                    ],
+
+                    'subscriptionStore' => [
+                        'factoryObjectName' => SubscriptionStoreFactory::class
+                    ],
+
+                    'propertyConverters' => [
+                        'DateTimeNormalizer' => [
+                            'className' => DateTimeNormalizer::class
+                        ],
+                        'ScalarNormalizer' => [
+                            'className' => ScalarNormalizer::class
+                        ],
+                        'EnumNormalizer' => [
+                            'className' => BackedEnumNormalizer::class
+                        ],
+                        'ArrayNormalizer' => [
+                            'className' => ArrayNormalizer::class
+                        ],
+                        'UriNormalizer' => [
+                            'className' => UriNormalizer::class
+                        ],
+                        'ValueObjectArrayDenormalizer' => [
+                            'className' => ValueObjectArrayDenormalizer::class
+                        ],
+                        'ValueObjectBoolDenormalizer' => [
+                            'className' => ValueObjectBoolDenormalizer::class
+                        ],
+                        'ValueObjectFloatDenormalizer' => [
+                            'className' => ValueObjectFloatDenormalizer::class
+                        ],
+                        'ValueObjectIntDenormalizer' => [
+                            'className' => ValueObjectIntDenormalizer::class
+                        ],
+                        'ValueObjectStringDenormalizer' => [
+                            'className' => ValueObjectStringDenormalizer::class
+                        ],
+                        // WE SKIP (flow specific):
+                        // 'DoctrinePersistentObjectNormalizer' => [
+                        //    'className' => 'Neos\ContentRepositoryRegistry\Infrastructure\Property\Normalizer\DoctrinePersistentObjectNormalizer'
+                        //],
+                        'CollectionTypeDenormalizer' => [
+                            'className' => CollectionTypeDenormalizer::class
+                        ],
+                        // WE SKIP (flow specific):
+                        // 'ProxyAwareObjectNormalizer' => [
+                        //     'className' => 'Neos\ContentRepositoryRegistry\Infrastructure\Property\Normalizer\ProxyAwareObjectNormalizer'
+                        //]
+                    ],
+
+                    'contentGraphProjection' => [
+                        // NOTE: This introduces a soft-dependency to the neos/contentgraph-doctrinedbaladapter package, but it can be overridden when a different adapter is used
+                        'factoryObjectName' => ContentGraphProjectionFactoryAdapter::class,
+
+                        'catchUpHooks' => [
+                            'Neos.ContentRepositoryRegistry:FlushSubgraphCachePool' => [
+                                'factoryObjectName' => FlushSubgraphCachePoolCatchUpHookFactory::class
+                            ]
+                        ]
+                    ]
+
+                    // additional projections:
+                    //
+                    // 'projections' => [
+                    //     'My.Package:SomeProjection' => [ // just a name
+                    //         'factoryObjectName' => 'My\Package\Projection\SomeProjectionFactory',
+                    //         'options' => [],
+                    //         'catchUpHooks' => []
+                    //     ]
+                    // ],
+
+                    // Command Hooks
+                    //
+                    // 'commandHooks' => [
+                    //     'My.Package:SomeCommandHook' => [ // just a name
+                    //         'factoryObjectName' => 'My\Package\CommandHook\SomeCommandHookFactory'
+                    //     ]
+                    // ]
+                ]
+            ]
         ];
     }
 
@@ -166,7 +291,8 @@ final class ContentRepositoryRegistry implements SingletonInterface
      */
     private function getFactory(
         ContentRepositoryId $contentRepositoryId
-    ): ContentRepositoryFactory {
+    ): ContentRepositoryFactory
+    {
         // This cache is CRUCIAL, because it ensures that the same CR always deals with the same objects internally, even if multiple services
         // are called on the same CR.
         if (!array_key_exists($contentRepositoryId->value, $this->factoryInstances)) {
