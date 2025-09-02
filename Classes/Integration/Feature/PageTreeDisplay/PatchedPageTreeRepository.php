@@ -141,6 +141,7 @@ class PatchedPageTreeRepository extends \TYPO3\CMS\Backend\Tree\Repository\PageT
             'perms_userid' => 1, // Default admin
             'perms_user' => 31, // Default permissions
             //'perms_groupid' => 0,
+            'crdate' => $node->timestamps->originalCreated->getTimestamp(),
             'tstamp' => $node->timestamps->originalLastModified?->getTimestamp() ?? $node->timestamps->originalCreated->getTimestamp(),
             'SYS_LASTCHANGED' => $node->timestamps->originalLastModified?->getTimestamp() ?? $node->timestamps->originalCreated->getTimestamp(),
             'perms_group' => 27,

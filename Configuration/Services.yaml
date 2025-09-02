@@ -68,3 +68,11 @@ services:
         command: 'cr:setupRootNode'
         description: 'Setup root Node'
         schedulable: false
+
+
+  # Event Listeners
+  Sandstorm\ContentrepositoryTypo3\Integration\Feature\FrontendRendering\ModifyRecordsAfterFetchingContentListener:
+    tags:
+      - name: event.listener
+        #identifier: 'modify-records-after-fetching-content'
+        event: TYPO3\CMS\Frontend\ContentObject\Event\ModifyRecordsAfterFetchingContentEvent

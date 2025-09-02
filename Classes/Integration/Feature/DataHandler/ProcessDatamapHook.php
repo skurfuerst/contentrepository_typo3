@@ -33,7 +33,7 @@ class ProcessDatamapHook
 
     public static function isNew(int|string $recordUid)
     {
-        return str_contains($recordUid, 'NEW');
+        return str_contains($recordUid, 'NEW') || $recordUid < 0; // IMHO negative numbers mean: "insert after the existing element with ID ...
     }
 
     private function getContentSubgraph(): ContentSubgraphInterface

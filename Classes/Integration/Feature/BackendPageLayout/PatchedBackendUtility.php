@@ -39,7 +39,7 @@ class PatchedBackendUtility
         $node = $this->subgraph->findNodeById($nodeAggregateId);
         do {
             if ($node === null) {
-                return [];
+                break;
             }
             $parentNode = $this->subgraph->findParentNode($node->aggregateId);
             if ($parentNode === null) {
@@ -48,6 +48,14 @@ class PatchedBackendUtility
             $rootline[] = PatchedPageTreeRepository::buildTypo3PageArrayForNode($node, $parentNode->aggregateId, $this->contentRepository->getNodeTypeManager());;
             $node = $parentNode;
         } while (true);
+
+        if (count($rootline) === 0) {
+            return [
+                [
+                    'uid' => $uid,
+                ] // add a fake rootline element -> WORKAROUND FOR TYPO3\CMS\Core\Page\PageLayoutResolver::getLayoutIdentifierForPage(): Argument #1 ($page) must be of type array, bool given, called in /var/www/html/vendor/typo3/cms-backend/Classes/View/BackendLayoutView.php on line 158
+            ];
+        }
 
         return array_reverse($rootline);
     }
@@ -67,7 +75,7 @@ class PatchedBackendUtility
                 $node = $this->subgraph->findNodeById(NodeIdGenerator::fromNumericTypo3Id($uid));
                 $parentNode = $this->subgraph->findParentNode(NodeIdGenerator::fromNumericTypo3Id($uid));
 
-                return PatchedContentFetcher::buildTypo3TtContentArrayForNode($node, $parentNode->aggregateId, $this->contentRepository->getNodeTypeManager());
+                return PatchedContentFetcher::buildTypo3TtContentArrayForNode($node, $parentNode?->aggregateId, $this->contentRepository->getNodeTypeManager());
             }
 
             if ($table === 'pages') {
