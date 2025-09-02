@@ -25,7 +25,8 @@ readonly class DefaultNodeTypeManagerFactory implements NodeTypeManagerFactoryIn
         foreach ($TCA['tt_content']['columns'] as $column => $columnDef) {
             $nodeTypeDef['properties'][$column] = [
                 // TODO: string?? or more type safe??
-                'type' => 'string'
+                'type' => 'string',
+                'defaultValue' => ''
             ];
         }
 
@@ -44,7 +45,8 @@ readonly class DefaultNodeTypeManagerFactory implements NodeTypeManagerFactoryIn
         foreach ($TCA['pages']['columns'] as $column => $columnDef) {
             $nodeTypeDef['properties'][$column] = [
                 // TODO: string?? or more type safe??
-                'type' => 'string'
+                'type' => 'string',
+                'defaultValue' => ''
             ];
         }
 

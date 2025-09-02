@@ -51,9 +51,9 @@ class ProcessDatamapHook
         if (array_key_exists('pages', $dataHandler->datamap)) {
             $subgraph = $this->getContentSubgraph();
             foreach ($dataHandler->datamap['pages'] as $recordId => $recordData) {
-                $propertyValues = PropertyValuesToWrite::fromArray([
-                    'title' => $recordData['title'],
-                ]);
+                $propertyValuesCleaned = $recordData;
+                unset($propertyValuesCleaned['pid']);
+                $propertyValues = PropertyValuesToWrite::fromArray($propertyValuesCleaned);
 
                 if (self::isNew($recordId)) {
                     // TODO: Nummern unschön; aber geht gerade nicht anders (könnte man noch mappen)
@@ -70,7 +70,6 @@ class ProcessDatamapHook
         if (array_key_exists('tt_content', $dataHandler->datamap)) {
             $subgraph = $this->getContentSubgraph();
             foreach ($dataHandler->datamap['tt_content'] as $recordId => $recordData) {
-                // TODO: NodeType from $recordData['CType']
                 $propertyValuesCleaned = $recordData;
                 unset($propertyValuesCleaned['pid']);
                 $propertyValues = PropertyValuesToWrite::fromArray($propertyValuesCleaned);

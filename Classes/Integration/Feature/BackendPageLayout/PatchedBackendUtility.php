@@ -38,6 +38,9 @@ class PatchedBackendUtility
         $rootline = [];
         $node = $this->subgraph->findNodeById($nodeAggregateId);
         do {
+            if ($node === null) {
+                return [];
+            }
             $parentNode = $this->subgraph->findParentNode($node->aggregateId);
             if ($parentNode === null) {
                 break;
@@ -57,10 +60,10 @@ class PatchedBackendUtility
             $table = $params[0];
             $uid = $params[1];
 
-            if (ProcessDatamapHook::isNew($uid)) {
-                return [];
-            }
             if ($table === 'tt_content') {
+                if (ProcessDatamapHook::isNew($uid)) {
+                    return [];
+                }
                 $node = $this->subgraph->findNodeById(NodeIdGenerator::fromNumericTypo3Id($uid));
                 $parentNode = $this->subgraph->findParentNode(NodeIdGenerator::fromNumericTypo3Id($uid));
 
@@ -68,6 +71,9 @@ class PatchedBackendUtility
             }
 
             if ($table === 'pages') {
+                if (ProcessDatamapHook::isNew($uid)) {
+                    return [];
+                }
                 $node = $this->subgraph->findNodeById(NodeIdGenerator::fromNumericTypo3Id($uid));
 
                 $parentNode = $this->subgraph->findParentNode(NodeIdGenerator::fromNumericTypo3Id($uid));

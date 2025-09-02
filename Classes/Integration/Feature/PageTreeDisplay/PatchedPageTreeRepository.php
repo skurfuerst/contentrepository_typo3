@@ -41,6 +41,9 @@ class PatchedPageTreeRepository extends \TYPO3\CMS\Backend\Tree\Repository\PageT
 
     private static function mapNodeTypeNameToDoktype(NodeTypeName $nodeTypeName): int
     {
+        if ($nodeTypeName->equals(NodeTypeNameFactory::forSites())) {
+            return 0;
+        }
         if (!str_starts_with($nodeTypeName->value, 'TYPO3:Document.')) {
             throw new \RuntimeException('TODO: Node type ' . $nodeTypeName->value . ' does not start with TYPO3:Document.');
         }
@@ -112,6 +115,8 @@ class PatchedPageTreeRepository extends \TYPO3\CMS\Backend\Tree\Repository\PageT
         $nodeType = $nodeTypeManager->getNodeType($node->nodeTypeName);
 
         return [
+            ...$node->properties,
+
             // Core TYPO3 fields mapped from Neos
             'uid' => intval($node->aggregateId->value),
             'pid' => $parentId ? intval($parentId->value) : 0,
@@ -136,6 +141,8 @@ class PatchedPageTreeRepository extends \TYPO3\CMS\Backend\Tree\Repository\PageT
             'perms_userid' => 1, // Default admin
             'perms_user' => 31, // Default permissions
             //'perms_groupid' => 0,
+            'tstamp' => $node->timestamps->originalLastModified?->getTimestamp() ?? $node->timestamps->originalCreated->getTimestamp(),
+            'SYS_LASTCHANGED' => $node->timestamps->originalLastModified?->getTimestamp() ?? $node->timestamps->originalCreated->getTimestamp(),
             'perms_group' => 27,
             'perms_everybody' => 0,
             'mount_pid' => 0,
@@ -143,7 +150,7 @@ class PatchedPageTreeRepository extends \TYPO3\CMS\Backend\Tree\Repository\PageT
             'shortcut_mode' => '',
             'mount_pid_ol' => 0,
             'url' => '',
-            'sys_language_uid' => '',
+            'sys_language_uid' => 0,
             'l10n_parent' => 0, // Different translation handling in Neos
         ];
     }
