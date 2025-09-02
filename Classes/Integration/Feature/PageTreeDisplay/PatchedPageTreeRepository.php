@@ -61,11 +61,11 @@ class PatchedPageTreeRepository extends \TYPO3\CMS\Backend\Tree\Repository\PageT
         $subgraph = $this->getContentSubgraph();
         $rootNode = $subgraph->findRootNodeByType(NodeTypeNameFactory::forSites());
 
-        $children = $subgraph->findChildNodes($rootNode->aggregateId, FindChildNodesFilter::create()); // TODO: only document nodes
+        $children = $subgraph->findChildNodes($rootNode->aggregateId, FindChildNodesFilter::create(nodeTypes: 'TYPO3:Document'));
 
         $loaderFunction = null;
         $loaderFunction = function(Node $node, $level) use ($subgraph, &$loaderFunction) {
-            $children = $subgraph->findChildNodes($node->aggregateId, FindChildNodesFilter::create()); // TODO: only document nodes
+            $children = $subgraph->findChildNodes($node->aggregateId, FindChildNodesFilter::create(nodeTypes: 'TYPO3:Document'));
             return $this->mapNodesToPageRecordsAndLoadChildren($children, $node->aggregateId, $level + 1, $loaderFunction);
         };
 
