@@ -14,6 +14,7 @@ use Neos\ContentRepository\Core\Projection\ContentGraph\Nodes;
 use Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryId;
 use Neos\ContentRepository\Core\SharedModel\Node\NodeAggregateId;
 use Neos\ContentRepository\Core\SharedModel\Workspace\WorkspaceName;
+use Sandstorm\ContentrepositoryTypo3\Integration\Feature\NodeIdHandling\NodeIdGenerator;
 use Sandstorm\ContentrepositoryTypo3\Integration\Feature\RootNode\NodeTypeNameFactory;
 use Sandstorm\ContentrepositoryTypo3\Registry\ContentRepositoryRegistry;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
@@ -62,7 +63,11 @@ class PatchedPageTreeRepository extends \TYPO3\CMS\Backend\Tree\Repository\PageT
     public function getTreeLevels(array $pageTree, int $depth, ?array $entryPointIds = null): array
     {
         $subgraph = $this->getContentSubgraph();
-        $rootNode = $subgraph->findRootNodeByType(NodeTypeNameFactory::forSites());
+        if (intval($pageTree['uid']) === 0) {
+            $rootNode = $subgraph->findRootNodeByType(NodeTypeNameFactory::forSites());
+        } else {
+            $rootNode = $subgraph->findNodeById(NodeIdGenerator::fromNumericTypo3Id($pageTree['uid']));
+        }
 
         $children = $subgraph->findChildNodes($rootNode->aggregateId, FindChildNodesFilter::create(nodeTypes: 'TYPO3:Document'));
 
