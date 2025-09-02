@@ -1,6 +1,6 @@
 <?php
 
-namespace Sandstorm\ContentrepositoryTypo3\Integration\Command;
+namespace Sandstorm\ContentrepositoryTypo3\Registry\Command;
 
 use Neos\ContentRepository\Core\Service\ContentRepositoryMaintainerFactory;
 use Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryId;
@@ -12,7 +12,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
-class GenerateNodesCommand extends Command
+class CrPruneCommand extends Command
 {
     public function __construct(private readonly ContentRepositoryRegistry $contentRepositoryRegistry)
     {
@@ -22,7 +22,8 @@ class GenerateNodesCommand extends Command
     protected function configure(): void
     {
         $this
-            ->setName('cr:generateNodes')
+            ->setName('cr:prune')
+            ->setDescription('Prune all events from CR')
             ->addArgument(
                 'contentRepository',
                 InputArgument::OPTIONAL,
@@ -54,14 +55,14 @@ class GenerateNodesCommand extends Command
             new ContentRepositoryMaintainerFactory()
         );
 
-        //$result = $contentRepositoryMaintainer->
+        $result = $contentRepositoryMaintainer->prune();
 
         if ($result !== null) {
             $io->error($result->getMessage());
             return Command::FAILURE;
         }
 
-        $io->success(sprintf('Content Repository "%s" was set up', $contentRepositoryId->value));
+        $io->success(sprintf('Content Repository "%s" was pruned', $contentRepositoryId->value));
         return Command::SUCCESS;
     }
 }

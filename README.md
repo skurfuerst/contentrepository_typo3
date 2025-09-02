@@ -27,3 +27,12 @@ composer update
 	},
 
 ```
+
+
+Set up
+
+typo3 cr:setup
+typo3 cr:setupRootNode default
+typo3 cr:setupRootNode default foo
+
+typo3 cr:prune

@@ -43,7 +43,8 @@ class SetupRootNodeCommand extends Command
                 'siteNodeType',
                 InputArgument::OPTIONAL,
                 'Site Node type',
-                'TYPO3:SiteRootPage'
+                # create as default page
+                'TYPO3:Document.1'
             )
             ->addOption(
                 'quiet',

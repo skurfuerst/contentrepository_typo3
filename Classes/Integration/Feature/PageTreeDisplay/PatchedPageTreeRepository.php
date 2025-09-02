@@ -6,6 +6,7 @@ namespace Sandstorm\ContentrepositoryTypo3\Integration\Feature\PageTreeDisplay;
 use Neos\ContentRepository\Core\ContentRepository;
 use Neos\ContentRepository\Core\DimensionSpace\DimensionSpacePoint;
 use Neos\ContentRepository\Core\NodeType\NodeTypeManager;
+use Neos\ContentRepository\Core\NodeType\NodeTypeName;
 use Neos\ContentRepository\Core\Projection\ContentGraph\ContentSubgraphInterface;
 use Neos\ContentRepository\Core\Projection\ContentGraph\Filter\FindChildNodesFilter;
 use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
@@ -36,6 +37,16 @@ class PatchedPageTreeRepository extends \TYPO3\CMS\Backend\Tree\Repository\PageT
         $this->contentRepository = $contentRepositoryRegistry->get(
             ContentRepositoryId::fromString('default')
         );
+    }
+
+    private static function mapNodeTypeNameToDoktype(NodeTypeName $nodeTypeName): int
+    {
+        if (!str_starts_with($nodeTypeName->value, 'TYPO3:Document.')) {
+            throw new \RuntimeException('TODO: Node type ' . $nodeTypeName->value . ' does not start with TYPO3:Document.');
+        }
+
+        return intval(substr($nodeTypeName->value, 15));
+
     }
 
     /**
@@ -95,7 +106,7 @@ class PatchedPageTreeRepository extends \TYPO3\CMS\Backend\Tree\Repository\PageT
         return $typo3PageArray;
     }
 
-    public static function buildTypo3PageArrayForNode(Node $node, NodeAggregateId $parentId, NodeTypeManager $nodeTypeManager): array
+    public static function buildTypo3PageArrayForNode(Node $node, NodeAggregateId|null $parentId, NodeTypeManager $nodeTypeManager): array
     {
         $properties = $node->properties;
         $nodeType = $nodeTypeManager->getNodeType($node->nodeTypeName);
@@ -103,17 +114,17 @@ class PatchedPageTreeRepository extends \TYPO3\CMS\Backend\Tree\Repository\PageT
         return [
             // Core TYPO3 fields mapped from Neos
             'uid' => intval($node->aggregateId->value),
-            'pid' => intval($parentId->value),
+            'pid' => $parentId ? intval($parentId->value) : 0,
             'sorting' => 0,
             'starttime' => null,
             'endtime' => null,
             'hidden' => false, // TODO
-            'fe_group' => [],
+            'fe_group' => '',
             'title' => (string)($properties['title'] ?? ''),
             'nav_title' => (string)($properties['navigationTitle'] ?? $properties['title'] ?? ''),
             'nav_hide' => false,
             'php_tree_stop' => 0,
-            'doktype' => '', // TODO: $this->mapNodeTypeToDoktype($node->nodeTypeName->value), // TODO
+            'doktype' => self::mapNodeTypeNameToDoktype($node->nodeTypeName),
             'is_siteroot' => $nodeType->isOfType(NodeTypeNameFactory::forSite()),
             'module' => '', // Not directly applicable
             'extendToSubpages' => 0, // Not directly applicable

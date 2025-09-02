@@ -7,6 +7,7 @@ use Neos\ContentRepository\Core\Projection\ContentGraph\ContentSubgraphInterface
 use Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryId;
 use Neos\ContentRepository\Core\SharedModel\Workspace\WorkspaceName;
 use Sandstorm\ContentrepositoryTypo3\Integration\Feature\ContentModule\PatchedContentFetcher;
+use Sandstorm\ContentrepositoryTypo3\Integration\Feature\DataHandler\ProcessDatamapHook;
 use Sandstorm\ContentrepositoryTypo3\Integration\Feature\NodeIdHandling\NodeIdGenerator;
 use Sandstorm\ContentrepositoryTypo3\Integration\Feature\PageTreeDisplay\PatchedPageTreeRepository;
 use Sandstorm\ContentrepositoryTypo3\Registry\ContentRepositoryRegistry;
@@ -56,6 +57,9 @@ class PatchedBackendUtility
             $table = $params[0];
             $uid = $params[1];
 
+            if (ProcessDatamapHook::isNew($uid)) {
+                return [];
+            }
             if ($table === 'tt_content') {
                 $node = $this->subgraph->findNodeById(NodeIdGenerator::fromNumericTypo3Id($uid));
                 $parentNode = $this->subgraph->findParentNode(NodeIdGenerator::fromNumericTypo3Id($uid));
@@ -65,9 +69,10 @@ class PatchedBackendUtility
 
             if ($table === 'pages') {
                 $node = $this->subgraph->findNodeById(NodeIdGenerator::fromNumericTypo3Id($uid));
+
                 $parentNode = $this->subgraph->findParentNode(NodeIdGenerator::fromNumericTypo3Id($uid));
 
-                return PatchedPageTreeRepository::buildTypo3PageArrayForNode($node, $parentNode->aggregateId, $this->contentRepository->getNodeTypeManager());
+                return PatchedPageTreeRepository::buildTypo3PageArrayForNode($node, $parentNode?->aggregateId, $this->contentRepository->getNodeTypeManager());
             }
 
             return BackendUtility::getRecord(...$params);

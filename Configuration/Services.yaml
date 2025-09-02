@@ -54,6 +54,14 @@ services:
         description: 'Content Repository Status'
         schedulable: false
 
+  Sandstorm\ContentrepositoryTypo3\Registry\Command\CrPruneCommand:
+    tags:
+      - name: 'console.command'
+        command: 'cr:prune'
+        description: 'Content Repository Prune'
+        schedulable: false
+
+
   Sandstorm\ContentrepositoryTypo3\Integration\Feature\RootNode\Command\SetupRootNodeCommand:
     tags:
       - name: 'console.command'

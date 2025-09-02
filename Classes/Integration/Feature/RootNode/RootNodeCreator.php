@@ -112,9 +112,9 @@ readonly class RootNodeCreator
             );
         }
 
-        if (!$siteNodeType->isOfType(NodeTypeNameFactory::NAME_SITE)) {
+        /*if (!$siteNodeType->isOfType(NodeTypeNameFactory::NAME_SITE)) {
             throw new \RuntimeException('TODO: Site Node not of correct type');
-        }
+        }*/
 
         $siteNodeAggregate = $this->contentRepository->getContentGraph(WorkspaceName::forLive())
             ->findChildNodeAggregateByName(

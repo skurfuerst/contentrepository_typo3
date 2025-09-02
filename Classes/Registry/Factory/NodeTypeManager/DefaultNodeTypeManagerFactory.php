@@ -32,6 +32,25 @@ readonly class DefaultNodeTypeManagerFactory implements NodeTypeManagerFactoryIn
         return $nodeTypeDef;
     }
 
+    private static function nodeTypeFromPageTca(mixed $value)
+    {
+        global $TCA;
+        $nodeTypeDef = [
+            'superTypes' => [
+                'TYPO3:Document' => true
+            ],
+            'properties' => []
+        ];
+        foreach ($TCA['pages']['columns'] as $column => $columnDef) {
+            $nodeTypeDef['properties'][$column] = [
+                // TODO: string?? or more type safe??
+                'type' => 'string'
+            ];
+        }
+
+        return $nodeTypeDef;
+    }
+
     /** @param array<string, mixed> $options */
     public function build(ContentRepositoryId $contentRepositoryId, array $options): NodeTypeManager
     {
@@ -73,6 +92,10 @@ readonly class DefaultNodeTypeManagerFactory implements NodeTypeManagerFactoryIn
                 global $TCA;
                 foreach ($TCA['tt_content']['columns']['CType']['config']['items'] as $itemDef) {
                     $nodeTypes['TYPO3:Content.' . $itemDef['value']] = self::nodeTypeFromTtContentTca($itemDef['value']);
+                }
+
+                foreach ($TCA['pages']['columns']['doktype']['config']['items'] as $itemDef) {
+                    $nodeTypes['TYPO3:Document.' . $itemDef['value']] = self::nodeTypeFromPageTca($itemDef['value']);
                 }
 
                 return $nodeTypes;

@@ -31,7 +31,7 @@ class ProcessDatamapHook
         );
     }
 
-    private static function isNew(int|string $recordUid)
+    public static function isNew(int|string $recordUid)
     {
         return str_contains($recordUid, 'NEW');
     }
@@ -51,13 +51,13 @@ class ProcessDatamapHook
         if (array_key_exists('pages', $dataHandler->datamap)) {
             $subgraph = $this->getContentSubgraph();
             foreach ($dataHandler->datamap['pages'] as $recordId => $recordData) {
-                // TODO: NodeType from $recordData['doktype']
                 $propertyValues = PropertyValuesToWrite::fromArray([
                     'title' => $recordData['title'],
                 ]);
 
                 if (self::isNew($recordId)) {
-                    $this->createNew($recordId, $recordData['pid'], $propertyValues, NodeTypeName::fromString('TYPO3:Page'), $subgraph);
+                    // TODO: Nummern unschön; aber geht gerade nicht anders (könnte man noch mappen)
+                    $this->createNew($recordId, $recordData['pid'], $propertyValues, NodeTypeName::fromString('TYPO3:Document.' . $recordData['doktype']), $subgraph);
                 } else {
                     $this->update($recordId, $propertyValues, $subgraph);
                 }
