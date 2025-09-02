@@ -59,7 +59,7 @@ class NewCrPageRouter implements RouterInterface
                     nodeTypes: 'TYPO3:Document',
                     propertyValue: PropertyValueEquals::create(
                         PropertyName::fromString('slug'),
-                        $urlPathPart,
+                        '/' . $urlPathPart,
                         false
                     )
                 ));
