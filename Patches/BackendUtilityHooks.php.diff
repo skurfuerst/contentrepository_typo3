@@ -1,0 +1,15 @@
+--- cms-backend/Classes/Utility/BackendUtility.orig.php	2025-08-14 10:10:19.000000000 +0200
++++ cms-backend/Classes/Utility/BackendUtility.php	2025-09-02 08:55:18.587364275 +0200
+@@ -337,6 +337,12 @@
+      */
+     public static function BEgetRootLine($uid, $clause = '', $workspaceOL = false, array $additionalFields = [], bool $useDeleteClause = true)
+     {
++        // PATCHED BEGETROOTLINE
++        if (isset($GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['BackendUtility_UNSAFE']['BEgetRootline'])) {
++            $params = func_get_args();
++            return GeneralUtility::callUserFunction($GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['BackendUtility_UNSAFE']['BEgetRootline'], $params);
++        }
++
+         $runtimeCache = GeneralUtility::makeInstance(CacheManager::class)->getCache('runtime');
+         $beGetRootLineCache = $runtimeCache->get('backendUtilityBeGetRootLine') ?: [];
+         $output = [];

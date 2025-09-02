@@ -11,7 +11,8 @@
     "neos/contentrepository-dbal": "dev-90-dbal-update",
     "neos/contentrepository-structureadjustment": "^9.0.0",
     "neos/contentrepository-nodemigration": "^9.0.0",
-    "psr/clock": "^1"
+    "psr/clock": "^1",
+    "cweagans/composer-patches": "dev-main"
   },
   "suggest": {
     "neos/contentgraph-doctrinedbaladapter": "dev-90-dbal-update"
@@ -24,6 +25,12 @@
   "extra": {
     "typo3/cms": {
       "extension-key": "contentrepository_typo3"
+    },
+    "patches": {
+      "typo3/cms-backend": {
+        "BackendUtilityHooks __TODO__change_path": "packages/contentrepository_typo3/Patches/BackendUtilityHooks.php.diff",
+        "BackendUtilityHooks2 __TODO__change_path": "packages/contentrepository_typo3/Patches/BackendUtilityHooks2.php.diff"
+      }
     }
   }
 }

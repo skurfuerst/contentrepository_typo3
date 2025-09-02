@@ -2,9 +2,9 @@
 
 namespace Sandstorm\ContentrepositoryTypo3\Integration\Feature\BackendEditing\FormDataProvider;
 
-use TYPO3\CMS\Backend\Form\FormDataProvider\DatabaseEditRow;
+use TYPO3\CMS\Backend\Form\FormDataProvider\DatabaseParentPageRow;
 
-class PatchedDatabaseEditRow extends DatabaseEditRow
+class PatchedDatabaseParentPageRow extends DatabaseParentPageRow
 {
     use OverriddenFormLogicTrait;
 }

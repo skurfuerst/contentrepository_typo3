@@ -1,0 +1,15 @@
+--- cms-backend/Classes/Utility/BackendUtility.orig.php	2025-09-02 09:02:29.185991784 +0200
++++ cms-backend/Classes/Utility/BackendUtility.php	2025-09-02 09:19:27.027717618 +0200
+@@ -88,6 +88,12 @@
+      */
+     public static function getRecord(string $table, $uid, $fields = '*', $where = '', $useDeleteClause = true): ?array
+     {
++        // PATCHED GETRECORD
++        if (isset($GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['BackendUtility_UNSAFE']['getRecord'])) {
++            $params = func_get_args();
++            return GeneralUtility::callUserFunction($GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['BackendUtility_UNSAFE']['getRecord'], $params);
++        }
++
+         if (empty($GLOBALS['TCA'][$table])
+             || !MathUtility::canBeInterpretedAsInteger($uid)
+             || (int)$uid > 2147483647
